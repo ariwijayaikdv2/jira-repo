@@ -1,0 +1,54 @@
+# https://taskfile.dev
+
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  default:
+    cmds:
+      - echo "{{.GREETING}}"
+    silent: true
+  migrate:
+    cmds:
+      - migrate -path db/migrations -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=${POSTGRES_SSL_MODE}" {{.cmd}}
+  create-migration:
+    cmds:
+      - migrate create -ext sql -dir db/migrations/ {{.name}} -tz UTC
+  seed:
+    cmds:
+      - go run ./cmd/bin/main.go seed -total={{.total}} -table={{.table}}
+  dev:
+    cmds:
+      - go run ./cmd/bin/main.go
+  ws:
+    cmds:
+      - go run ./cmd/bin/main.go ws --port=8080
+  build:
+    cmds:
+      - go build -o ./app ./cmd/bin/main.go
+  build-dev:
+    cmds:
+      - git pull
+      - go build -o ./app ./cmd/bin/main.go
+      # - immortalctl stop app-dev
+      # - immortalctl halt app-dev
+      # - mv ./app-app ../binaries/app-dev
+      # - immortal -c ../binaries/app-dev/app-dev.yaml
+      # - immortalctl start app-dev
+      # - immortalctl status
+  lint-fix:
+    cmds:
+      - gofmt -w .
+  lint-ci:
+    cmds:
+      - golangci-lint run
+  commit:
+    cmds:
+      - task lint-fix
+      - task lint-ci
+      - git add .
+      - git commit -m "{{.msg}}"
