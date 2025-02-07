@@ -1,0 +1,6 @@
+penambahan file dari checkout branch staging
+
+
+
+
+edit file untuk test changes dari branch yang sama menggunakan metode squash and merge
