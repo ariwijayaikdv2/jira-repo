@@ -1,4 +1,4 @@
-FROM golang:alpine as builder
+FROM golang:alpine AS builder
 RUN apk update && \
     apk add --no-cache git && \
     apk add --no-cach bash && \
@@ -19,7 +19,7 @@ RUN go mod verify
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o application .
 
-FROM alpine:latest
+FROM alpine:latest AS image
 RUN apk --no-cache add ca-certificates bash tzdata
 ENV TZ=Asia/Jakarta
 
