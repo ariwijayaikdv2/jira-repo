@@ -55,7 +55,7 @@ jobs:
         run: go build -o jira-repo-app .
 
       - name: Create Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.IMAGE_NAME }}_${{ env.IMAGE_TAG }}
           path: jira-repo

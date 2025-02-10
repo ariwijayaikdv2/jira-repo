@@ -11,7 +11,7 @@ RUN apk update && \
 
 WORKDIR /app
 
-ENV GOPATH /go
+ENV GOPATH=/go
 COPY go.* ./
 RUN go mod download
 RUN go mod verify
@@ -21,7 +21,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o application .
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates bash tzdata
-ENV TZ Asia/Jakarta
+ENV TZ=Asia/Jakarta
 
 WORKDIR /app/
 COPY --from=builder /app/application .
