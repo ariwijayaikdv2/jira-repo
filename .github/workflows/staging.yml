@@ -22,7 +22,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     if: |
-      github.event_name == 'pull_request' && github.ref == 'refs/heads/staging'
+      ${{ github.event_name == 'pull_request' && github.ref == 'refs/heads/staging' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -40,11 +40,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: |
-      github.event_name != 'pull_request' && github.ref == 'refs/heads/staging' ||
-      github.event_name != 'pull_request' && github.ref == 'refs/heads/production'
+      ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/staging' }} ||
+      ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/production' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
 
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -52,20 +54,20 @@ jobs:
           go-version: '1.22'
 
       - name: Build Application
-        run: go build -o jira-repo-app .
+        run: go build -o jira-repo-app ./cmd/bin/main.go
 
       - name: Create Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.IMAGE_NAME }}_${{ env.IMAGE_TAG }}
+          name: jira-repo-${{ env.IMAGE_TAG }}
           path: jira-repo
 
   build-docker:
     runs-on: ubuntu-latest
     needs: test
     if: |
-      github.event_name != 'pull_request' && github.ref == 'refs/heads/staging' ||
-      github.event_name != 'pull_request' && github.ref == 'refs/heads/production'
+      ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/staging' }} ||
+      ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/production' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -105,7 +107,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }} && github.ref == 'refs/heads/staging'
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/staging' }}
           tags: |
             ${{ env.REGISTRY_GH }}/${{ env.IMAGE_NAME_GH }}:${{ env.IMAGE_TAG }} , ${{ env.REGISTRY_GH }}/${{ env.IMAGE_NAME_GH }}:${{ env.IMAGE_TAG_LATEST }} ,
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} , ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG_LATEST }}
@@ -130,7 +132,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-binary, build-docker]
     if: |
-      github.ref == 'refs/heads/production'
+      ${{ github.ref == 'refs/heads/production' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -143,12 +145,15 @@ jobs:
           echo "::set-output name=changelog::$(cat CHANGELOG.md)"
 
       - name: Create GitHub Release
-        id: create-release
-        uses: actions/create-release@v1
+        uses: elgohr/Github-Release-Action@v5
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        permissions:
+          packages: write
+          contents: write
         with:
-          tag_name: ${{ env.IMAGE_TAG }}
-          release_name: Release ${{ env.IMAGE_TAG }}
-          draft: false
+          title: jira-app-${{ env.IMAGE_TAG }}
+          tag: ${{ env.IMAGE_TAG }}
           prerelease: false
           body: ${{ steps.changelog.outputs.changelog }}  # Gunakan changelog sebagai body release
 
