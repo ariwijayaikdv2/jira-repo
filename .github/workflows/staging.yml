@@ -145,12 +145,15 @@ jobs:
           echo "::set-output name=changelog::$(cat CHANGELOG.md)"
 
       - name: Create GitHub Release
-        id: create-release
-        uses: actions/create-release@v1
+        uses: elgohr/Github-Release-Action@v5
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        permissions:
+          packages: write
+          contents: write
         with:
-          tag_name: ${{ env.IMAGE_TAG }}
-          release_name: Release ${{ env.IMAGE_TAG }}
-          draft: false
+          title: jira-app-${{ env.IMAGE_TAG }}
+          tag: ${{ env.IMAGE_TAG }}
           prerelease: false
           body: ${{ steps.changelog.outputs.changelog }}  # Gunakan changelog sebagai body release
 
